@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { textureStore } from "three/tsl";
 
 // 1. Scene: 모든 게 올라가는 무대
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#111111"); //배경색 지정
+scene.background = new THREE.Color("#ffffff"); //배경색 지정
 
 // 2. Camera: 무대를 바라보는 시점
 // PerspectiveCamera(시야각, 종횡비, 가까운 컷, 먼 컷)
@@ -24,35 +25,26 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// 4. Mesh = Geometry(형태) + Material(재질)
-// const geometry = new THREE.TorusKnotGeometry(1, 0.3, 128, 32);
-// const material = new THREE.MeshStandardMaterial({
-//   color: "#89deff",
-//   metalness: 0.3,
-//   roughness: 0.4,
-// });
-// const mesh = new THREE.Mesh(geometry, material);
-// scene.add(mesh); // 무대에 올린다
-
-// 5. Light
-const ambientLight = new THREE.AmbientLight("#ffffff", 1);
+// Light
+const ambientLight = new THREE.AmbientLight("#ffffff", 3);
 scene.add(ambientLight);
 
-// 전구처럼 한 점에서 사방으로 빛이 퍼지는 조명 (단순한 도형엔 괜찮)
-// const pointLight = new THREE.PointLight("#ffffff", 30);
-// pointLight.position.set(3, 3, 3);
-// scene.add(pointLight);
-
 // 태양처럼 특정 방향에서 평행하게 쏘는 조명
-const directionLight = new THREE.DirectionalLight("#ffffff", 3);
-directionLight.position.set(2, 4, 2);
-scene.add(directionLight);
+const directionalLight = new THREE.DirectionalLight("#ffffff", 5);
+directionalLight.position.set(2, 4, 2);
+scene.add(directionalLight);
 
 // OrbitControls — 마우스로 돌려볼 수 있게
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; // 관성 효과
 
 // GLTFLoader - 모델 불러오기
+const textureLoader = new THREE.TextureLoader();
+const texture = textureLoader.load("/colormap.png");
+texture.flipY = false; //텍스처 방향 문제 (이미지는 왼쭉 위 시작이지만 OpenGL은 왼쪽 아래가 시작점이어서)
+texture.colorSpace = THREE.SRGBColorSpace; // 색상 밝기 문제
+
+// 색상 먼저 불러내야함 (textLoader)
 const loader = new GLTFLoader();
 
 loader.load(
@@ -63,6 +55,16 @@ loader.load(
     const model = gltf.scene;
     model.scale.set(0.2, 0.2, 0.2); // 크기 조절
     model.position.set(0, -1, 0); // 위치 조정
+    // 모델에 색상 입히기
+    model.traverse((child) => {
+      // 여러 부품 꺼내서 확인
+      if (child.isMesh) {
+        //3d 물체인가
+        child.material.map = texture; //색상 덮어씌우기
+        child.material.needsUpdate = true; //다시 렌더링
+      }
+    });
+
     scene.add(model);
     console.log("모델 로드 완료");
   },
