@@ -5,10 +5,13 @@
 }
 
 body {
-  background: #000;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 #canvas {
   display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: transparent;
 }
