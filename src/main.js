@@ -18,6 +18,12 @@ camera.position.set(0, 1, 3);
 // 마우스 좌표 저장할 변수
 // three.js 마우스 좌표는 -1~1 사이 (정중앙이 0, 오른쪽 끝이 1)
 const mouse = { x: 0, y: 0 };
+let scrollY = 0;
+
+window.addEventListener("wheel", (e) => {
+  scrollY += e.deltaY; // 휠 움직인만큼 누적
+  scrollY = Math.max(0, scrollY); //0 아래로 안내려가게
+});
 
 window.addEventListener("mousemove", (e) => {
   // 화면 크기 기준으로 -1 ~ 1 사이 값으로 반환
@@ -59,7 +65,7 @@ loader.load(
     // 성공
     model = gltf.scene;
     model.scale.set(0.2, 0.2, 0.2); // 크기 조절
-    // model.position.set(0, -1, 0); // 위치 조정
+    model.position.set(0, 0, 0); // 위치 조정
     // 모델에 색상 입히기
     model.traverse((child) => {
       // 여러 부품 꺼내서 확인
@@ -97,9 +103,19 @@ function animate() {
   // 마우스 위치로 모델 회전
   if (model) {
     // 0.3은 회전 강도 - 숫자 바꾸면 더 많이/적게 기울어짐
-    model.rotation.y += (mouse.x * 1 - model.rotation.y) * 1; //좌우
-    model.rotation.x += (mouse.y * 1 - model.rotation.x) * 1;
+    model.rotation.y += (mouse.x * 0.3 - model.rotation.y) * 0.1; //좌우
+    model.rotation.x += (mouse.y * 0.3 - model.rotation.x) * 0.1;
+
+    // 스크롤에 따른 모델이 회전하거나 이동
+    // 스크롤하면 모델이 y축으로 회전 + 아래로 이동
+    // model.rotation.y += scrollY * 0.001;
+    // model.position.y += (-1 - scrollY * 0.005 - model.position.y) * 0.05;
   }
+
+  // 스크롤 하면 카메라 앞으로 이동
+  // scrollY 클수록 z값 작아져서 가까워짐, z값이 0.5 아래로 안내려가게 제한
+  const targetZ = Math.max(0.5, 3 - scrollY * 0.005);
+  camera.position.z += (targetZ - camera.position.z) * 0.05;
 
   renderer.render(scene, camera); // 화면에 그린다
 }
