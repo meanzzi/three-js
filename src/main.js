@@ -34,12 +34,33 @@ camera.position.set(0, 1, 3);
 // 마우스 좌표 저장할 변수
 // three.js 마우스 좌표는 -1~1 사이 (정중앙이 0, 오른쪽 끝이 1)
 const mouse = { x: 0, y: 0 };
-let scrollY = 0;
 
 window.addEventListener("mousemove", (e) => {
   // 화면 크기 기준으로 -1 ~ 1 사이 값으로 반환
   mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
   mouse.y = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+// 광선을 싸서 물체에 맞는지 감지하는 것
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+window.addEventListener("click", (e) => {
+  // 마우스 위치 -1 ~ 1 사이로 변환
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  // 카메라 기준 광선 쏘기
+  raycaster.setFromCamera(pointer, camera);
+
+  if (model) {
+    //광선에 맞은 물체들의 배열
+    const intersects = raycaster.intersectObject(model, true);
+
+    if (intersects.length > 0) {
+      console.log("클릭");
+      sailAway();
+    }
+  }
 });
 
 // Renderer: Scene + Camera → 화면
@@ -77,6 +98,7 @@ loader.load(
     model = gltf.scene;
     model.scale.set(0.2, 0.2, 0.2); // 크기 조절
     model.position.set(0, -3, 0); // 위치 조정
+    model.rotation.y = Math.PI / 2;
     // 모델에 색상 입히기
     model.traverse((child) => {
       // 여러 부품 꺼내서 확인
@@ -138,6 +160,31 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+function sailAway() {
+  // 배 움직이는 효과 -> 옆으로 가게 하고 싶은데
+  gsap.to(model.position, {
+    x: 5,
+    // z: -10,
+    y: -0.5,
+    duration: 2,
+    ease: "power2.in", // 처음엔 느리다가 빠르게
+  });
+
+  // 동시에 카메라도 따라가기
+  gsap.to(camera.position, {
+    z: 0.5,
+    duration: 2,
+    ease: "power2.in",
+  });
+
+  // 배가 살짝 기울면서 가는 효과
+  gsap.to(model.rotation, {
+    x: -0.3,
+    duration: 2,
+    ease: "power2.in",
+  });
+}
+
 // 매 프레임 실행되는 애니메이션 루프
 function animate() {
   requestAnimationFrame(animate);
@@ -145,7 +192,7 @@ function animate() {
   // 마우스 위치로 모델 회전
   if (model) {
     // 0.3은 회전 강도 - 숫자 바꾸면 더 많이/적게 기울어짐
-    model.rotation.y += (mouse.x * 0.3 - model.rotation.y) * 0.1; //좌우
+    model.rotation.y += (mouse.x * 0.3 - Math.PI / 2 - model.rotation.y) * 0.1; //좌우
     model.rotation.x += (mouse.y * 0.3 - model.rotation.x) * 0.1;
   }
   renderer.render(scene, camera); // 화면에 그린다
